@@ -1,12 +1,31 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import seaborn as sns
+import os
+import plotly.express as px
+import plotly.graph_objs as go
+from sklearn.cluster import KMeans
+from sklearn.linear_model import LinearRegression
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import mean_squared_error
 
 st.set_page_config(
     page_title="Final Project",  
     page_icon="sjlogo.png",  
     layout="wide"  
 )
+
+DATA_PATH = r'train.csv'
+
+if os.path.exists(DATA_PATH):
+    try:
+        df = pd.read_csv(DATA_PATH)
+        st.success(f"Dataset loaded successfully! Shape: {df.shape}")
+    except Exception as e:
+        st.error(f"An error occurred while loading the dataset: {e}")
+else:
+    st.error(f"File not found at {DATA_PATH}. Please check the file path.")
 
 def sidebar():
     # Get the current page from the session state or default to 'overview'
@@ -93,39 +112,96 @@ if current_page == 'overview':
     st.dataframe(df.head())
 
 elif current_page == 'analytics':
-    st.title('Data Exploration')
+    st.title('Data Exploration and Analysis')
     st.markdown('<hr>', unsafe_allow_html=True)
+
     st.markdown("""
-    ### Data Exploration
-    - Clean the data.
-    - Handle missing values.
-    - Perform basic descriptive statistics.
+    ### Steps Included:
+    1. Data Cleaning and Exploration
+    2. Descriptive Statistics
+    3. Sales Distribution
+    4. Clustering
+    5. Linear Regression
     """)
 
-    # Data Exploration
-    st.subheader('Data Cleaning and Exploration')
-    # Display the initial state of the dataframe
+    # Data Cleaning and Exploration
+    st.subheader('1. Data Cleaning and Exploration')
     st.write("### Initial Data")
+    df.columns = df.columns.str.strip()  # Strip leading/trailing spaces from column names
     st.dataframe(df)
 
-    # Handle missing values
     st.write("### Handling Missing Values")
     df_clean = df.dropna()  # Drop rows with missing values
-    # or use fillna() for a different approach
-    # df_clean = df.fillna(method='ffill')  # Forward fill missing values
+    st.write("Cleaned Data (No Missing Values):")
+    st.dataframe(df_clean)
 
-    # Basic Descriptive Statistics
-    st.write("### Descriptive Statistics")
+    # Descriptive Statistics
+    st.subheader('2. Descriptive Statistics')
     st.write(df_clean.describe())
 
-    # Example: Showing distribution of 'Sales' column
-    st.write("### Sales Distribution")
-    fig, ax = plt.subplots()
-    df_clean['Sales'].hist(bins=30, ax=ax)
-    ax.set_title('Sales Distribution')
-    ax.set_xlabel('Sales')
-    ax.set_ylabel('Frequency')
-    st.pyplot(fig)
+    # Sales Distribution with Plotly
+    st.subheader('3. Sales Distribution')
+
+    # Dynamic control for number of bins in histogram
+    num_bins = st.slider("Select Number of Bins", min_value=10, max_value=100, value=30)
+    
+    # Plotly histogram for sales distribution
+    fig = px.histogram(df_clean, x='Sales', nbins=num_bins, title="Sales Distribution")
+    fig.update_layout(xaxis_title='Sales', yaxis_title='Frequency')
+    st.plotly_chart(fig)
+
+    # Clustering with Plotly
+    st.subheader('4. Clustering (Customer Segmentation)')
+    st.write("K-Means Clustering on Sales and Category")
+
+    if 'Sales' in df_clean.columns and 'Category' in df_clean.columns:
+        # One-hot encode the 'Category' column
+        category_dummies = pd.get_dummies(df_clean['Category'], prefix='Category')
+        cluster_data = pd.concat([df_clean[['Sales']], category_dummies], axis=1)
+
+        # Dynamic control for the number of clusters in K-Means
+        num_clusters = st.slider("Select Number of Clusters", min_value=2, max_value=10, value=3)
+
+        # Perform K-Means clustering
+        kmeans = KMeans(n_clusters=num_clusters, random_state=42).fit(cluster_data)
+        cluster_data['Cluster'] = kmeans.labels_
+
+        # Interactive scatter plot with Plotly
+        fig = px.scatter(cluster_data, x='Sales', y=category_dummies.columns[0], color='Cluster', title=f'K-Means Clustering with {num_clusters} Clusters')
+        st.plotly_chart(fig)
+    else:
+        st.error("'Sales' or 'Category' column is missing in the data!")
+
+    # Linear Regression with Plotly
+    st.subheader('5. Linear Regression (Sales Prediction)')
+    st.write("Using 'Category' to predict 'Sales'")
+
+    # Check if necessary columns exist
+    required_columns = ['Category', 'Sales']
+    if all(col in df_clean.columns for col in required_columns):
+        # One-hot encode the 'Category' column
+        category_dummies = pd.get_dummies(df_clean['Category'], prefix='Category')
+        features = category_dummies  # Use encoded 'Category' columns as features
+        target = df_clean['Sales']
+        
+        # Split the data for training and testing
+        X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
+        
+        # Fit the Linear Regression model
+        model = LinearRegression().fit(X_train, y_train)
+        predictions = model.predict(X_test)
+        mse = mean_squared_error(y_test, predictions)
+        
+        st.write(f"Model Coefficients: {model.coef_}")
+        st.write(f"Mean Squared Error: {mse}")
+
+        # Plot Actual vs Predicted Sales using Plotly
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=y_test, y=predictions, mode='markers', name='Predicted vs Actual'))
+        fig.update_layout(title='Actual vs Predicted Sales', xaxis_title='Actual Sales', yaxis_title='Predicted Sales')
+        st.plotly_chart(fig)
+    else:
+        st.error("Required columns for Linear Regression are missing!")
 
 elif current_page == 'data_viz':
     st.title('Data Visualization')
