@@ -3,12 +3,19 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import seaborn as sns
 import os
-import plotly.express as px
-import plotly.graph_objs as go
-from sklearn.cluster import KMeans
-from sklearn.linear_model import LinearRegression
+import plotly.graph_objects as go  # Import Plotly Graph Objects
 from sklearn.model_selection import train_test_split
+from sklearn.linear_model import LinearRegression
+from sklearn.tree import DecisionTreeRegressor
+from sklearn.ensemble import RandomForestRegressor
 from sklearn.metrics import mean_squared_error
+from sklearn.cluster import KMeans, AgglomerativeClustering, DBSCAN
+from sklearn.preprocessing import StandardScaler, LabelEncoder
+from sklearn.metrics import silhouette_score
+from wordcloud import WordCloud
+from colorama import Fore, Back, Style
+import plotly.express as px
+
 
 # Set page configuration
 st.set_page_config(
@@ -43,8 +50,9 @@ def sidebar():
     nav_links = {
         "introduction": "✨ Introduction &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
         "overview": "📝 Overview &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
-        "analytics": "⚡ Data Exploration&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
-        "data_viz": "📈 Data Visualization&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+        "analytics": "⚡ Data Exploration &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+        "analy_ins": "📈 Analysis and Insights &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+        "data_viz": "📌 Conclusion &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
     }
 
     # Create a container for buttons and render navigation links
@@ -85,7 +93,12 @@ if current_page == 'overview':
 elif current_page == 'introduction':
     st.title('Welcome to Laptop Price Prediction')
     st.markdown('<hr>', unsafe_allow_html=True)
-    st.image('cube.gif', width=300)
+    # Create three columns: one for left, one for center, and one for right
+    col1, col2, col3 = st.columns([2, 2, 1])  # Adjust the weight to center the image
+    
+    # Place the image in the center column
+    with col2:
+        st.image('cube.gif', width=300)
     st.title('Introduction')
     st.markdown("""
     ### Predicting Laptop Prices
@@ -142,8 +155,8 @@ elif current_page == 'analytics':
     1. Data Cleaning and Exploration
     2. Descriptive Statistics
     3. Laptop Price Distribution
-    4. Clustering
-    5. Linear Regression
+    4. Clustering: Similar Laptop Classification
+    5. Linear Regression: Modeling Price
     """)
 
     # Data Cleaning and Exploration
@@ -172,64 +185,107 @@ elif current_page == 'analytics':
     fig.update_layout(xaxis_title='Price', yaxis_title='Frequency')
     st.plotly_chart(fig)
 
-    # Clustering with Plotly
-    st.subheader('4. Clustering (Laptop Segmentation)')
-    st.write("K-Means Clustering on Price and Storage")
+    # Clustering
+    st.subheader('4. Clustering: Similar Laptop Classification')
+    st.write("🔵 K-means Clustering: Partitioning data into distinct clusters")
 
-    # Check if 'Storage' column exists and handle missing columns
-    if 'Storage' in df_clean.columns:
-        # One-hot encode the 'Storage' column
-        storage_dummies = pd.get_dummies(df_clean['Storage'], prefix='Storage')
-        cluster_data = pd.concat([df_clean[['Price']], storage_dummies], axis=1)
+    from sklearn.cluster import KMeans
+    from sklearn.preprocessing import StandardScaler
 
-        # Dynamic control for the number of clusters in K-Means
-        num_clusters = st.slider("Select Number of Clusters", min_value=2, max_value=10, value=3)
+    # Select numeric columns for clustering
+    numeric_cols = df_clean.select_dtypes(include='number')
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(numeric_cols)
 
-        # Perform K-Means clustering
-        kmeans = KMeans(n_clusters=num_clusters, random_state=42).fit(cluster_data)
-        cluster_data['Cluster'] = kmeans.labels_
+    # Elbow method to find optimal number of clusters
+    loss = []
+    for k in range(1, 11):
+        kmeans = KMeans(n_clusters=k, random_state=42)
+        kmeans.fit(X_scaled)
+        loss.append(kmeans.inertia_)
 
-        # Interactive scatter plot with Plotly
-        fig = px.scatter(cluster_data, x='Price', y=storage_dummies.columns[0], color='Cluster', title=f'K-Means Clustering with {num_clusters} Clusters')
-        st.plotly_chart(fig)
+    # Plot Elbow Curve
+    fig = px.line(x=list(range(1, 11)), y=loss, markers=True, title="Elbow Method for Optimal Clusters")
+    fig.update_layout(xaxis_title='Number of Clusters (k)', yaxis_title='Inertia (Loss)')
+    st.plotly_chart(fig)
+
+    # K-means with 5 clusters
+    k = st.number_input("Select Number of Clusters for K-means", min_value=2, max_value=10, value=5)
+    kmeans = KMeans(n_clusters=k, random_state=42)
+    labels_kmeans = kmeans.fit_predict(X_scaled)
+
+    df_clean['Cluster'] = labels_kmeans
+    st.write("Clustered Data:")
+    st.dataframe(df_clean)
+
+    # Linear Regression
+    st.subheader('5. Linear Regression: Modeling Price')
+    st.write("📈 Linear Regression: Modeling the relationship between features and price")
+
+    # Ensure required columns for linear regression
+    required_columns = ['Cpu_brand', 'Ram', 'Price']
+
+    # Check and log available columns in df_clean
+    st.write("Available columns in the cleaned dataset:")
+    st.write(df_clean.columns)
+
+    # Check for missing required columns
+    missing_columns = [col for col in required_columns if col not in df_clean.columns]
+    if missing_columns:
+        st.error(f"Missing required columns: {missing_columns}")
     else:
-        st.error("'Storage' column not found in the dataset!")
-
-    # Linear Regression with Plotly
-    st.subheader('5. Linear Regression (Price Prediction)')
-    st.write("Using 'Processor' and 'RAM' to predict 'Price'")
-
-    # Check if necessary columns exist for Linear Regression
-    required_columns = ['Processor', 'RAM', 'Price']
-    if all(col in df_clean.columns for col in required_columns):
-        # One-hot encode the 'Processor' and 'RAM' columns
-        processor_dummies = pd.get_dummies(df_clean['Processor'], prefix='Processor')
-        ram_dummies = pd.get_dummies(df_clean['RAM'], prefix='RAM')
-        features = pd.concat([processor_dummies, ram_dummies], axis=1)  # Use encoded columns as features
-        target = df_clean['Price']
+        st.success("All required columns for Linear Regression are present!")
         
-        # Split the data for training and testing
-        X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
-        
-        # Fit the Linear Regression model
-        model = LinearRegression().fit(X_train, y_train)
-        predictions = model.predict(X_test)
-        mse = mean_squared_error(y_test, predictions)
-        
-        st.write(f"Model Coefficients: {model.coef_}")
-        st.write(f"Mean Squared Error: {mse}")
+        # Check for missing data in the required columns
+        st.write("Checking for missing values in the required columns...")
+        st.write(df_clean[required_columns].isnull().sum())
 
-        # Plot Actual vs Predicted Price using Plotly
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=y_test, y=predictions, mode='markers', name='Predicted vs Actual'))
-        fig.update_layout(title='Actual vs Predicted Price', xaxis_title='Actual Price', yaxis_title='Predicted Price')
-        st.plotly_chart(fig)
-    else:
-        st.error("Required columns for Linear Regression ('Processor', 'RAM', 'Price') not found!")
+        # Proceed only if no missing data in the required columns
+        if df_clean[required_columns].isnull().sum().sum() > 0:
+            st.error("There are missing values in the required columns. Please handle them before proceeding!")
+        else:
+            # One-hot encoding
+            processor_dummies = pd.get_dummies(df_clean['Cpu_brand'], prefix='Cpu_brand')
+            ram_dummies = pd.get_dummies(df_clean['Ram'], prefix='Ram')
+            features = pd.concat([processor_dummies, ram_dummies], axis=1)
+            target = df_clean['Price']
 
-elif current_page == 'data_viz':
-    st.title('Data Visualization')
+            # Split data
+            X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
+
+            # Fit model
+            lr = LinearRegression()
+            lr.fit(X_train, y_train)
+            y_pred = lr.predict(X_test)
+
+            mse_lr = mean_squared_error(y_test, y_pred)
+
+            st.write("### Model Results")
+            st.write(f"Model Coefficients: {lr.coef_}")
+            st.write(f"Mean Squared Error: {mse_lr:.2f}")
+
+            # Plot Actual vs Predicted
+            st.write("### Actual vs Predicted Prices")
+            fig = go.Figure()
+            fig.add_trace(go.Scatter(x=y_test, y=y_pred, mode='markers', name='Predicted vs Actual'))
+            fig.update_layout(
+                title='Actual vs Predicted Price',
+                xaxis_title='Actual Price',
+                yaxis_title='Predicted Price',
+                template='plotly_white'
+            )
+            st.plotly_chart(fig)
+
+elif current_page == 'analy_ins':
+    st.title('Analysis and Insights')
 
     # Add data visualization-related content here
-    st.markdown('### Placeholder for Data Visualization')
+    st.markdown('### Analysis and Insights')
+
+
+elif current_page == 'data_viz':
+    st.title('Conclusion')
+
+    # Add data visualization-related content here
+    st.markdown('### Placeholder for Conlcusion')
 
