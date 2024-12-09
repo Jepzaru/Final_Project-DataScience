@@ -103,19 +103,19 @@ elif current_page == 'introduction':
     col1, col2, col3, col4, col5 = st.columns(5)
 
     with col1:
-        st.image('jep.jpg', width=300)  
+        st.image('Jep.png', width=300)  
         st.caption('Jeff Francis D. Conson')
 
     with col2:
-        st.image('kim.png', width=300) 
+        st.image('kem.png', width=300) 
         st.caption('Kimverly B. Bacalso')
 
     with col3:
-        st.image('rj.jpg', width=300) 
+        st.image('rays.png', width=300) 
         st.caption('Rise Jade R. Benavente')
 
     with col4:
-        st.image('saly.jpg', width=300)  
+        st.image('saly.png', width=300)  
         st.caption('Thesaly T. Tejano')
 
     with col5:
