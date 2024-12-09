@@ -15,7 +15,7 @@ from sklearn.metrics import silhouette_score
 from wordcloud import WordCloud
 from colorama import Fore, Back, Style
 import plotly.express as px
-
+import numpy as np
 
 # Set page configuration
 st.set_page_config(
@@ -80,15 +80,39 @@ if current_page == 'overview':
     st.title('Overview')
     st.markdown("""
     ### Laptop Price Dataset
-    - **Dataset Description**: This dataset contains information about laptops and their prices.
-    - **Research Question**: Can we predict the price of a laptop based on its features such as brand, processor, RAM, and storage?
-    - **Dataset Structure**:
-        - Columns: `Brand`, `Processor`, `RAM`, `Storage`, `Screen Size`, `Price`.
-        - Description: The dataset includes features like the brand, processor type, RAM size, storage capacity, screen size, and the corresponding price of each laptop.
+    - *Dataset Description*: This dataset contains information about laptops and their prices.
+    - *Research Question*: Can we predict the price of a laptop based on its features such as brand, processor, RAM, and storage?
+    - *Dataset Structure*:
+        - Columns: Company, TypeName, RAM, Weight, Price, TouchScreen, Ips, Ppi, Cpu_brand, HDD, SSD, Gpu_brand, Os.
+        - Description: The dataset includes features such as company name, brand, processor type, RAM size, storage capacity, screen size, and the corresponding price of each laptop.
     """)
     
+    # Allow users to select how many rows to display in the dataset structure
     st.subheader('Dataset Structure')
-    st.dataframe(df.head())
+    st.dataframe(df.head(), use_container_width=True)
+
+    # Clean column names
+    df.columns = df.columns.str.strip()  # Remove leading/trailing spaces
+    df.columns = df.columns.str.lower()  # Optional: Convert to lowercase for consistency
+
+    with st.expander('▼ Want to customize what columns to see?'):
+        num_rows = st.slider('Select number of rows to display', min_value=5, max_value=100, value=10)
+        selected_columns = st.multiselect('Select columns to display', options=df.columns.tolist(), default=df.columns.tolist())
+        st.write(df[selected_columns].head(num_rows), use_container_width=True)
+
+    st.subheader('Summary Statistics')
+    st.write(df.describe())
+
+    # Clean column names
+    df.columns = df.columns.str.strip()  # Remove leading/trailing spaces
+    df.columns = df.columns.str.lower()  # Optional: Convert to lowercase for consistency
+
+    # If RAM column is not numeric, extract numeric values
+    if df['ram'].dtype == 'object':  # If 'RAM' column is a string
+        df['ram'] = df['ram'].str.extract('(\d+)').astype(int)
+
+    # Filter only numerical columns for correlation
+    numerical_df = df.select_dtypes(include=[np.number])
 
 elif current_page == 'introduction':
     st.title('Welcome to Laptop Price Prediction')
