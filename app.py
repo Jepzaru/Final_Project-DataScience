@@ -111,16 +111,17 @@ elif current_page == 'introduction':
         st.caption('Kimverly B. Bacalso')
 
     with col3:
-        st.image('rays.png', width=300) 
-        st.caption('Rise Jade R. Benavente')
+        st.image('shana.jpg', width=300) 
+        st.caption('Xianna Andrei Cabana')
+        
 
     with col4:
         st.image('saly.png', width=300)  
         st.caption('Thesaly T. Tejano')
 
     with col5:
-        st.image('shana.jpg', width=300) 
-        st.caption('Xianna Andrei Cabana')
+        st.image('rays.png', width=300) 
+        st.caption('Rise Jade R. Benavente')
         
     st.markdown(
         """
