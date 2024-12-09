@@ -30,37 +30,6 @@ else:
 def sidebar():
     # Get the current page from the session state or default to 'overview'
     current_page = st.session_state.get('page', 'overview')
-    
-    # Add CSS for styling the sidebar navigation links
-    navlink_style = """
-    <style>
-    .nav-link {
-        display: block;
-        padding: 10px;
-        color: white;
-        font-size: 24px;
-        text-decoration: none;
-        border-radius: 10px;
-        text-align: center;
-        width: 100%; /* Full width to make all buttons equal */
-        box-sizing: border-box; /* Ensure padding is included in width */
-    }
-    .nav-link:hover {
-        background-color: black;
-        text-decoration: none;
-        font-weight: 700;
-    }
-    .active {
-        background-color: black;
-        font-weight: 700;
-    }
-    .sidebar-button-container {
-        display: flex;
-        flex-direction: column;
-    }
-    </style>
-    """
-    st.markdown(navlink_style, unsafe_allow_html=True)
 
     # Sidebar content
     st.sidebar.image('sjlogo.png', width=400)
@@ -68,9 +37,10 @@ def sidebar():
 
     # Define navigation links and their corresponding page keys
     nav_links = {
-        "overview": "⚪ Overview &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
-        "analytics": "⚪ Data Exploration&nbsp;&nbsp;&nbsp;&nbsp;",
-        "data_viz": "⚪ Data Visualization&nbsp;"
+        "introduction": "✨ Introduction &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+        "overview": "📝 Overview &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+        "analytics": "⚡ Data Exploration&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+        "data_viz": "📈 Data Visualization&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
     }
 
     # Create a container for buttons and render navigation links
@@ -83,7 +53,7 @@ def sidebar():
 
 # Initialize the page state
 if 'page' not in st.session_state:
-    st.session_state['page'] = 'overview'
+    st.session_state['page'] = 'introduction'
 
 # Render the sidebar
 sidebar()
@@ -106,10 +76,67 @@ if current_page == 'overview':
         - Description: The dataset captures order details, shipment information, product sales, and financial metrics like discounts and profit.
     """)
 
-    # Display dataset structure
+
     st.subheader('Dataset Structure')
     df = pd.read_csv('train.csv')
     st.dataframe(df.head())
+    
+elif current_page == 'introduction':
+    st.title('Welcome to WeatherWeatherLang')
+    st.markdown('<hr>', unsafe_allow_html=True)
+    st.image('cube.gif', width=300)
+    st.title('Introduction')
+    st.markdown("""
+    ### Rain Prediction
+    Predicting rain for the next day using machine learning can provide numerous benefits. 
+    It enables more informed decision-making for individuals and businesses, such as planning outdoor activities, 
+    scheduling events, and optimizing agricultural practices. Accurate rain predictions can also help 
+    utilities manage water resources more efficiently, reduce flooding risks, and improve disaster preparedness. 
+    For industries reliant on weather conditions, like transport and construction, it allows for better planning 
+    and resource allocation, minimizing delays and costs. Moreover, it can enhance personal safety by alerting people 
+    about adverse weather conditions and encouraging them to take precautions. Overall, using machine learning to predict 
+    rain can lead to a more efficient, safer, and proactive approach to managing weather-dependent activities.
+    """)
+
+    st.title('Team Members')
+    
+    col1, col2, col3, col4, col5 = st.columns(5)
+
+    with col1:
+        st.image('jep.jpg', width=300)  
+        st.caption('Jeff Francis D. Conson')
+
+    with col2:
+        st.image('kim.png', width=300) 
+        st.caption('Kimverly B. Bacalso')
+
+    with col3:
+        st.image('rj.jpg', width=300) 
+        st.caption('Rise Jade R. Benavente')
+
+    with col4:
+        st.image('saly.jpg', width=300)  
+        st.caption('Thesaly T. Tejano')
+
+    with col5:
+        st.image('shana.jpg', width=300) 
+        st.caption('Xianna Andrei Cabana')
+        
+    st.markdown(
+        """
+        <style>
+        .stImage img {
+            height: 300px !important;
+            border-radius: 15px;
+        }
+        .stCaption{
+            align-text: center;
+        }
+        </style>
+        """,
+        unsafe_allow_html=True
+    )
+
 
 elif current_page == 'analytics':
     st.title('Data Exploration and Analysis')
