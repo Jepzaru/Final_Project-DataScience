@@ -98,7 +98,7 @@ if current_page == 'overview':
     df.columns = df.columns.str.strip()  # Remove leading/trailing spaces
     df.columns = df.columns.str.lower()  # Optional: Convert to lowercase for consistency
 
-    with st.expander('▼ Customize what columns to see'):
+    with st.expander('▼ Customize what columns to display'):
         num_rows = st.slider('Select number of rows to display', min_value=5, max_value=100, value=10)
         selected_columns = st.multiselect('Select columns to display', options=df.columns.tolist(), default=df.columns.tolist())
         st.write(df[selected_columns].head(num_rows), use_container_width=True)
