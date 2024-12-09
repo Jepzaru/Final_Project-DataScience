@@ -374,49 +374,66 @@ elif current_page == 'conclusion':
         - Insights like these can help both consumers and businesses make informed decisions regarding brand preferences based on their pricing strategy or purchasing budget.
         """)
 
-        # Additional plot (Optional): Price vs. Company scatter plot for better visual analysis
-        fig, ax = plt.subplots(figsize=(10, 6))
-        sns.boxplot(x='Company', y='Price', data=df, ax=ax)
-        ax.set_title('Price Distribution by Company')
-        ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
-        st.pyplot(fig)
+        # Plotly interactive boxplot for price distribution by company
+        fig = px.box(df, 
+                    x='Company', 
+                    y='Price', 
+                    title='Price Distribution by Company',
+                    labels={'Price': 'Laptop Price', 'Company': 'Brand'},
+                    points='all'  # Show all points in the boxplot for clarity
+                    )
+        
+        fig.update_layout(
+            xaxis_tickangle=45  # Rotate the x-axis labels for better visibility
+        )
+
+        st.plotly_chart(fig)
 
     elif option == 'Price Distribution by Specs':
         st.write("Explore the price distribution across different laptop specifications.")
         
         # Price distribution by RAM size
-        ram_price_dist = df.groupby('Ram')['Price'].mean()
+        ram_price_dist = df.groupby('Ram')['Price'].mean().reset_index()
         st.write("Price Distribution by RAM Size:")
-        st.bar_chart(ram_price_dist)
+        fig_ram = px.bar(ram_price_dist, x='Ram', y='Price', title='Price Distribution by RAM Size',
+                        labels={'Ram': 'RAM Size (GB)', 'Price': 'Average Price'},
+                        color='Price', color_continuous_scale='Viridis')
+        st.plotly_chart(fig_ram)
 
         # Price distribution by Storage type (HDD and SSD)
         # Assuming HDD and SSD are separate columns, we can visualize their impact on price
-        hdd_price_dist = df.groupby('HDD')['Price'].mean()
-        ssd_price_dist = df.groupby('SSD')['Price'].mean()
+        hdd_price_dist = df.groupby('HDD')['Price'].mean().reset_index()
+        ssd_price_dist = df.groupby('SSD')['Price'].mean().reset_index()
 
         st.write("Price Distribution by HDD Size:")
-        st.bar_chart(hdd_price_dist)
+        fig_hdd = px.bar(hdd_price_dist, x='HDD', y='Price', title='Price Distribution by HDD Size',
+                        labels={'HDD': 'HDD Size (GB)', 'Price': 'Average Price'},
+                        color='Price', color_continuous_scale='Viridis')
+        st.plotly_chart(fig_hdd)
         
         st.write("Price Distribution by SSD Size:")
-        st.bar_chart(ssd_price_dist)
-        
+        fig_ssd = px.bar(ssd_price_dist, x='SSD', y='Price', title='Price Distribution by SSD Size',
+                        labels={'SSD': 'SSD Size (GB)', 'Price': 'Average Price'},
+                        color='Price', color_continuous_scale='Viridis')
+        st.plotly_chart(fig_ssd)
+
         st.write("""
         - We can observe trends based on specifications like RAM, HDD, and SSD. Laptops with higher RAM and storage configurations tend to have higher prices.
         - Understanding these trends can help consumers choose the specifications that fit their budget, while businesses can use this data for inventory management and pricing strategies.
         """)
 
         # Additional visualization: Scatter plot to analyze the relationship between price and RAM/storage
-        fig, ax = plt.subplots(1, 2, figsize=(14, 6))
-
         # Price vs RAM
-        sns.scatterplot(data=df, x='Ram', y='Price', ax=ax[0])
-        ax[0].set_title('Price vs RAM Size')
-        
-        # Price vs SSD
-        sns.scatterplot(data=df, x='SSD', y='Price', ax=ax[1])
-        ax[1].set_title('Price vs SSD Size')
+        fig_ram_scatter = px.scatter(df, x='Ram', y='Price', title='Price vs RAM Size',
+                                    labels={'Ram': 'RAM Size (GB)', 'Price': 'Laptop Price'},
+                                    color='Price', color_continuous_scale='Viridis')
+        st.plotly_chart(fig_ram_scatter)
 
-        st.pyplot(fig)
+        # Price vs SSD
+        fig_ssd_scatter = px.scatter(df, x='SSD', y='Price', title='Price vs SSD Size',
+                                    labels={'SSD': 'SSD Size (GB)', 'Price': 'Laptop Price'},
+                                    color='Price', color_continuous_scale='Viridis')
+        st.plotly_chart(fig_ssd_scatter)
 
     elif option == 'Best Models for Investment':
         st.write("Find the best models based on value for money.")
@@ -433,9 +450,14 @@ elif current_page == 'conclusion':
         - Businesses may also consider this analysis when selecting models to include in their inventory based on performance relative to cost.
         """)
 
-        # Optional: Plot top 10 models based on value for money
-        fig, ax = plt.subplots(figsize=(10, 6))
-        sns.barplot(x='value_for_money', y='TypeName', data=top_investment_models, ax=ax)
-        ax.set_title('Top 10 Models Based on Value for Money')
-        st.pyplot(fig)
-
+        # Plot top 10 models based on value for money using Plotly
+        fig = px.bar(top_investment_models, 
+                    x='value_for_money', 
+                    y='TypeName', 
+                    color='Company', 
+                    orientation='h',  # Horizontal bar chart
+                    title='Top 10 Models Based on Value for Money',
+                    labels={'value_for_money': 'Price to RAM Ratio', 'TypeName': 'Laptop Model'},
+                    hover_data=['Company', 'value_for_money'])
+        
+        st.plotly_chart(fig)
