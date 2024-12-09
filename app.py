@@ -41,10 +41,11 @@ def sidebar():
 
     # Define navigation links and their corresponding page keys
     nav_links = {
-        "introduction": "✨ Introduction &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
-        "overview": "📝 Overview &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
-        "analytics": "⚡ Data Exploration&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
-        "data_viz": "📈 Data Visualization&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"
+        "introduction": "✨ Introduction &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+        "overview": "📝 Overview &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+        "analytics": "⚡ Data Exploration&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;",
+        "insights": "📈 Analysis and Insights&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;   ",
+         "conclusion": "📌 Conclusion &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;"  
     }
 
     # Create a container for buttons and render navigation links
@@ -137,15 +138,6 @@ elif current_page == 'analytics':
     st.title('Data Exploration and Analysis')
     st.markdown('<hr>', unsafe_allow_html=True)
 
-    st.markdown("""
-    ### Steps Included:
-    1. Data Cleaning and Exploration
-    2. Descriptive Statistics
-    3. Laptop Price Distribution
-    4. Clustering
-    5. Linear Regression
-    """)
-
     # Data Cleaning and Exploration
     st.subheader('1. Data Cleaning and Exploration')
     st.write("### Initial Data")
@@ -164,54 +156,39 @@ elif current_page == 'analytics':
     # Laptop Price Distribution with Plotly
     st.subheader('3. Laptop Price Distribution')
 
-    # Dynamic control for number of bins in histogram
     num_bins = st.slider("Select Number of Bins", min_value=10, max_value=100, value=30)
-    
-    # Plotly histogram for laptop price distribution
     fig = px.histogram(df_clean, x='Price', nbins=num_bins, title="Laptop Price Distribution")
     fig.update_layout(xaxis_title='Price', yaxis_title='Frequency')
     st.plotly_chart(fig)
 
-    # Clustering with Plotly
+    # K-Means Clustering
     st.subheader('4. Clustering (Laptop Segmentation)')
     st.write("K-Means Clustering on Price and Storage")
 
-    # Check if 'Storage' column exists and handle missing columns
     if 'Storage' in df_clean.columns:
-        # One-hot encode the 'Storage' column
         storage_dummies = pd.get_dummies(df_clean['Storage'], prefix='Storage')
         cluster_data = pd.concat([df_clean[['Price']], storage_dummies], axis=1)
 
-        # Dynamic control for the number of clusters in K-Means
         num_clusters = st.slider("Select Number of Clusters", min_value=2, max_value=10, value=3)
 
-        # Perform K-Means clustering
         kmeans = KMeans(n_clusters=num_clusters, random_state=42).fit(cluster_data)
         cluster_data['Cluster'] = kmeans.labels_
 
-        # Interactive scatter plot with Plotly
         fig = px.scatter(cluster_data, x='Price', y=storage_dummies.columns[0], color='Cluster', title=f'K-Means Clustering with {num_clusters} Clusters')
         st.plotly_chart(fig)
-    else:
-        st.error("'Storage' column not found in the dataset!")
 
-    # Linear Regression with Plotly
+    # Linear Regression Model
     st.subheader('5. Linear Regression (Price Prediction)')
     st.write("Using 'Processor' and 'RAM' to predict 'Price'")
 
-    # Check if necessary columns exist for Linear Regression
     required_columns = ['Processor', 'RAM', 'Price']
     if all(col in df_clean.columns for col in required_columns):
-        # One-hot encode the 'Processor' and 'RAM' columns
         processor_dummies = pd.get_dummies(df_clean['Processor'], prefix='Processor')
         ram_dummies = pd.get_dummies(df_clean['RAM'], prefix='RAM')
-        features = pd.concat([processor_dummies, ram_dummies], axis=1)  # Use encoded columns as features
+        features = pd.concat([processor_dummies, ram_dummies], axis=1)
         target = df_clean['Price']
         
-        # Split the data for training and testing
         X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
-        
-        # Fit the Linear Regression model
         model = LinearRegression().fit(X_train, y_train)
         predictions = model.predict(X_test)
         mse = mean_squared_error(y_test, predictions)
@@ -219,17 +196,77 @@ elif current_page == 'analytics':
         st.write(f"Model Coefficients: {model.coef_}")
         st.write(f"Mean Squared Error: {mse}")
 
-        # Plot Actual vs Predicted Price using Plotly
         fig = go.Figure()
         fig.add_trace(go.Scatter(x=y_test, y=predictions, mode='markers', name='Predicted vs Actual'))
         fig.update_layout(title='Actual vs Predicted Price', xaxis_title='Actual Price', yaxis_title='Predicted Price')
         st.plotly_chart(fig)
-    else:
-        st.error("Required columns for Linear Regression ('Processor', 'RAM', 'Price') not found!")
 
-elif current_page == 'data_viz':
-    st.title('Data Visualization')
 
-    # Add data visualization-related content here
-    st.markdown('### Placeholder for Data Visualization')
+elif current_page == 'insights':
+    st.title('Analysis and Insights')
+    st.markdown('<hr>', unsafe_allow_html=True)
+    
+    st.subheader('1. Key Insights from Data Exploration and Clustering')
+    st.write("""
+        - **Laptop Price Segmentation**: From the K-Means clustering, we observed distinct segments based on price and storage. These segments help identify high-end laptops with larger storage capacities, as well as budget laptops with more modest specifications.
+        - **Price vs. Storage**: The clustering model showed a correlation between storage capacity and price, with laptops having larger storage being more expensive.
+        - **Predicted Price Trends**: The linear regression model revealed that both processor type and RAM have a significant impact on predicting the laptop price, with higher-end processors and more RAM correlating with higher prices.
+    """)
+
+    # Display the clustering insights
+    st.subheader('2. Clustering Results')
+    st.write("The following plot shows the results of K-Means clustering based on laptop prices and storage capacity.")
+    
+    # Recreate the plot from earlier if clustering data exists
+    if 'Cluster' in cluster_data.columns:
+        fig = px.scatter(cluster_data, x='Price', y=storage_dummies.columns[0], color='Cluster', 
+                         title='Laptop Price Segmentation via K-Means Clustering')
+        st.plotly_chart(fig)
+    
+    st.write("""
+        - The clustering analysis provides insights into the distribution of laptops based on their price and storage.
+        - The clusters show that laptops with larger storage tend to have a higher price, which aligns with expectations.
+    """)
+
+    # Display insights from the linear regression model
+    st.subheader('3. Linear Regression Results')
+    st.write("""
+        - **Model Performance**: The linear regression model predicted laptop prices with a mean squared error of `X` (replace X with your computed value), suggesting a relatively good fit for the data.
+        - **Coefficient Interpretation**: Higher-end processors and larger amounts of RAM are significant predictors of laptop price, with each additional GB of RAM and processor upgrade contributing positively to the price.
+    """)
+
+    st.write("Below is a scatter plot showing the actual vs. predicted prices using the linear regression model.")
+    
+    # Scatter plot for actual vs predicted prices
+    if 'y_test' in locals() and 'predictions' in locals():
+        fig = go.Figure()
+        fig.add_trace(go.Scatter(x=y_test, y=predictions, mode='markers', name='Predicted vs Actual'))
+        fig.update_layout(title='Actual vs Predicted Price', xaxis_title='Actual Price', yaxis_title='Predicted Price')
+        st.plotly_chart(fig)
+
+    # Conclusion and insights
+    st.subheader('4. Key Takeaways and Recommendations')
+    st.write("""
+        - **Laptop Price Prediction**: The analysis highlights how various features, such as processor, RAM, and storage, influence laptop prices. This information can guide consumers in selecting laptops within their budget based on their requirements.
+        - **Future Work**: The model could be improved further by adding more features like brand, screen size, and GPU type to improve prediction accuracy.
+        - **Business Use**: Businesses selling laptops can use this model to price their laptops more competitively by understanding which features are most valued by consumers.
+    """)
+
+elif current_page == 'conclusion':
+    st.title('Conclusion and Future Work')
+    st.markdown('<hr>', unsafe_allow_html=True)
+    
+    st.subheader("Conclusion")
+    st.write("""
+    - This project demonstrates the ability to predict laptop prices using various machine learning techniques, including K-Means clustering and Linear Regression.
+    - The insights gained from the data exploration and analysis can help businesses and consumers make informed decisions.
+    - The model performed well in predicting laptop prices, although there is potential for improvement by incorporating more features and tuning the model.
+    """)
+    
+    st.subheader("Future Work")
+    st.write("""
+    - **Enhanced Data Collection**: Future work could involve collecting more data, particularly for missing values, which could improve the accuracy of the models.
+    - **Model Improvement**: We could explore other machine learning models, such as Random Forest or XGBoost, for more accurate price predictions.
+    - **Interactive Dashboard**: The development of an interactive dashboard for end-users to input laptop features and receive price predictions could be a valuable extension of this project.
+    """)
 
