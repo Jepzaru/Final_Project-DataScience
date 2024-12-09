@@ -82,6 +82,9 @@ if current_page == 'overview':
     ### Laptop Price Dataset
     - *Dataset Description*: This dataset contains information about laptops and their prices.
     - *Research Question*: Can we predict the price of a laptop based on its features such as brand, processor, RAM, and storage?
+    - *Selected Analysis Technique*: 
+        - K-means Clustering: Helps by identifying distinct segments or clusters of laptops with similar features, such as brand, specifications, and price ranges. By grouping laptops into different clusters, the model can identify trends and patterns specific to each segment, allowing for more accurate price prediction. For example, laptops in a high-performance cluster may have different pricing factors compared to those in a budget-friendly cluster.
+        - Linear Regression: Helps predict the price of a laptop by finding the best-fit line that describes how the price changes with respect to the various features. This technique is essential for understanding the impact of specific features on the price and providing a quantitative way to forecast future prices based on these attributes. It is especially useful when the relationship between the variables is linear or approximately linear.
     - *Dataset Structure*:
         - Columns: Company, TypeName, RAM, Weight, Price, TouchScreen, Ips, Ppi, Cpu_brand, HDD, SSD, Gpu_brand, Os.
         - Description: The dataset includes features such as company name, brand, processor type, RAM size, storage capacity, screen size, and the corresponding price of each laptop.
@@ -197,7 +200,7 @@ elif current_page == 'analytics':
     fig.update_layout(xaxis_title='Price', yaxis_title='Frequency')
     st.plotly_chart(fig)
 
-     # Clustering
+    # Clustering
     st.subheader('4. Clustering: Similar Laptop Classification')
     st.write("🔵 K-means Clustering: Partitioning data into distinct clusters")
 
@@ -303,16 +306,26 @@ elif current_page == 'insights':
     # Display the clustering insights
     st.subheader('2. Clustering Results')
     st.write("The following plot shows the results of K-Means clustering based on laptop prices and storage capacity.")
-    
+
     # Recreate the plot from earlier if clustering data exists
     if 'Cluster' in cluster_data.columns:
         fig = px.scatter(cluster_data, x='Price', y=storage_dummies.columns[0], color='Cluster', 
-                         title='Laptop Price Segmentation via K-Means Clustering')
+                        title='Laptop Price Segmentation via K-Means Clustering')
         st.plotly_chart(fig)
-    
+
     st.write("""
         - The clustering analysis provides insights into the distribution of laptops based on their price and storage.
         - The clusters show that laptops with larger storage tend to have a higher price, which aligns with expectations.
+        - The K-means clustering algorithm has grouped laptops into distinct clusters based on their numeric features, such as RAM, weight, price, and storage.
+        - The **Elbow Method** was used to determine the optimal number of clusters, which helped identify a balanced number of groups that best represent the data.
+        - **Cluster Insights**:
+            - Laptops in higher clusters tend to have greater RAM, larger storage (SSD/HDD), and higher prices.
+            - Lower clusters are associated with budget-friendly laptops with lower specifications, such as less RAM, smaller storage, and lower prices.
+            - Understanding the clusters can guide marketing strategies, inventory management, and feature optimization for different target segments.
+        - **Practical Applications**:
+            - **Consumer Decision-Making**: The clusters help segment laptops for consumers, making it easier to recommend products based on specific needs (e.g., high-performance laptops for professionals or budget-friendly options for students).
+            - **Pricing Strategy**: Businesses can use the clustering results to set competitive pricing, understanding which features drive up the cost.
+            - **Feature Optimization**: By profiling the clusters, manufacturers can identify areas for improvement (e.g., increasing storage or reducing weight in a certain cluster).
     """)
 
     # Display insights from the linear regression model
