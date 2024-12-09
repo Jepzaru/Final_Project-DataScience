@@ -325,11 +325,117 @@ elif current_page == 'conclusion':
     - The insights gained from the data exploration and analysis can help businesses and consumers make informed decisions.
     - The model performed well in predicting laptop prices, although there is potential for improvement by incorporating more features and tuning the model.
     """)
+
+    st.subheader("Main Takeaways and Recommendations")
+    st.write("""
+    - **Main Takeaways**:
+        - Machine learning models such as Linear Regression can be effectively used for price prediction tasks.
+        - Data exploration revealed key factors that influence laptop pricing, such as brand, specifications, and market demand.
+        - While the model shows promising results, there is room for improvement through feature engineering and model tuning.
     
+    - **Actionable Recommendations**:
+        - **Businesses**: Leverage the insights from the data analysis to optimize inventory and pricing strategies.
+        - **Consumers**: Use the predictions to compare prices and make informed purchasing decisions.
+        - **Future Improvements**: Explore advanced machine learning models, and consider expanding the dataset for better accuracy.
+    """)
+
     st.subheader("Future Work")
     st.write("""
     - **Enhanced Data Collection**: Future work could involve collecting more data, particularly for missing values, which could improve the accuracy of the models.
     - **Model Improvement**: We could explore other machine learning models, such as Random Forest or XGBoost, for more accurate price predictions.
     - **Interactive Dashboard**: The development of an interactive dashboard for end-users to input laptop features and receive price predictions could be a valuable extension of this project.
     """)
+
+    st.subheader("Final Thoughts")
+    st.write("""
+    In conclusion, this project provides a strong foundation for laptop price prediction through data-driven approaches. By leveraging machine learning models and insightful data analysis, we successfully demonstrated the practical application of predictive analytics. 
+    Moving forward, the proposed enhancements could elevate the utility and precision of this project, ultimately contributing to its real-world applicability for both consumers and businesses.
+    """)
+
+    st.subheader("Explore Insights")
+    st.write("Use the options below to interact with the insights:")
+
+    # Dropdown or text box to explore further insights
+    option = st.selectbox(
+        'Select an insight to explore further:',
+        ['Price Trends by Brand', 'Price Distribution by Specs', 'Best Models for Investment']
+    )
+
+    if option == 'Price Trends by Brand':
+        st.write("Here, you can explore how different brands influence the laptop price trends.")
+        
+        # Visualize price trends by Company (Brand)
+        brand_price_trend = df.groupby('Company')['Price'].mean().sort_values(ascending=False)
+        st.write("Average Price by Company:")
+        st.bar_chart(brand_price_trend)
+
+        st.write("""
+        - From the chart, we can observe how different companies perform in terms of average price. Higher-end companies tend to have higher average prices, while budget-friendly companies tend to have more affordable options.
+        - Insights like these can help both consumers and businesses make informed decisions regarding brand preferences based on their pricing strategy or purchasing budget.
+        """)
+
+        # Additional plot (Optional): Price vs. Company scatter plot for better visual analysis
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.boxplot(x='Company', y='Price', data=df, ax=ax)
+        ax.set_title('Price Distribution by Company')
+        ax.set_xticklabels(ax.get_xticklabels(), rotation=45)
+        st.pyplot(fig)
+
+    elif option == 'Price Distribution by Specs':
+        st.write("Explore the price distribution across different laptop specifications.")
+        
+        # Price distribution by RAM size
+        ram_price_dist = df.groupby('Ram')['Price'].mean()
+        st.write("Price Distribution by RAM Size:")
+        st.bar_chart(ram_price_dist)
+
+        # Price distribution by Storage type (HDD and SSD)
+        # Assuming HDD and SSD are separate columns, we can visualize their impact on price
+        hdd_price_dist = df.groupby('HDD')['Price'].mean()
+        ssd_price_dist = df.groupby('SSD')['Price'].mean()
+
+        st.write("Price Distribution by HDD Size:")
+        st.bar_chart(hdd_price_dist)
+        
+        st.write("Price Distribution by SSD Size:")
+        st.bar_chart(ssd_price_dist)
+        
+        st.write("""
+        - We can observe trends based on specifications like RAM, HDD, and SSD. Laptops with higher RAM and storage configurations tend to have higher prices.
+        - Understanding these trends can help consumers choose the specifications that fit their budget, while businesses can use this data for inventory management and pricing strategies.
+        """)
+
+        # Additional visualization: Scatter plot to analyze the relationship between price and RAM/storage
+        fig, ax = plt.subplots(1, 2, figsize=(14, 6))
+
+        # Price vs RAM
+        sns.scatterplot(data=df, x='Ram', y='Price', ax=ax[0])
+        ax[0].set_title('Price vs RAM Size')
+        
+        # Price vs SSD
+        sns.scatterplot(data=df, x='SSD', y='Price', ax=ax[1])
+        ax[1].set_title('Price vs SSD Size')
+
+        st.pyplot(fig)
+
+    elif option == 'Best Models for Investment':
+        st.write("Find the best models based on value for money.")
+        
+        # Calculate value for money using Price and RAM as an indicator (you can adjust this based on your dataset's features)
+        df['value_for_money'] = df['Price'] / df['Ram']  # Simplified assumption: price-to-RAM ratio
+        top_investment_models = df[['Company', 'TypeName', 'value_for_money']].sort_values(by='value_for_money').head(10)
+        
+        st.write("Top 10 Models Based on Value for Money:")
+        st.dataframe(top_investment_models)
+
+        st.write("""
+        - These models are ranked based on their price-to-RAM ratio. Lower values indicate better value for money, making these models more desirable for cost-conscious consumers.
+        - Businesses may also consider this analysis when selecting models to include in their inventory based on performance relative to cost.
+        """)
+
+        # Optional: Plot top 10 models based on value for money
+        fig, ax = plt.subplots(figsize=(10, 6))
+        sns.barplot(x='value_for_money', y='TypeName', data=top_investment_models, ax=ax)
+        ax.set_title('Top 10 Models Based on Value for Money')
+        st.pyplot(fig)
 
