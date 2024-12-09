@@ -194,163 +194,202 @@ elif current_page == 'analytics':
 
     # Laptop Price Distribution with Plotly
     st.subheader('3. Laptop Price Distribution')
-
     num_bins = st.slider("Select Number of Bins", min_value=10, max_value=100, value=30)
     fig = px.histogram(df_clean, x='Price', nbins=num_bins, title="Laptop Price Distribution")
     fig.update_layout(xaxis_title='Price', yaxis_title='Frequency')
     st.plotly_chart(fig)
 
-    # Clustering
-    st.subheader('4. Clustering: Similar Laptop Classification')
-    st.write("🔵 K-means Clustering: Partitioning data into distinct clusters")
+    # Data Correlation (Dropping object columns)
+    # Select only numeric columns (int64, float64)
+    numeric_df = df_clean.select_dtypes(include=[np.number])
 
-    from sklearn.cluster import KMeans
-    from sklearn.preprocessing import StandardScaler
+    # Calculate correlation on numeric columns only
+    corr_matrix = numeric_df.corr()
 
-    # Select numeric columns for clustering
-    numeric_cols = df_clean.select_dtypes(include='number')
-    scaler = StandardScaler()
-    X_scaled = scaler.fit_transform(numeric_cols)
+    # Display the correlation matrix
 
-    # Elbow method to find optimal number of clusters
-    loss = []
-    for k in range(1, 11):
-        kmeans = KMeans(n_clusters=k, random_state=42)
-        kmeans.fit(X_scaled)
-        loss.append(kmeans.inertia_)
-
-    # Plot Elbow Curve
-    fig = px.line(x=list(range(1, 11)), y=loss, markers=True, title="Elbow Method for Optimal Clusters")
-    fig.update_layout(xaxis_title='Number of Clusters (k)', yaxis_title='Inertia (Loss)')
+    # Correlation Heatmap using Plotly
+    st.subheader('5. Correlation Heatmap')
+    fig = px.imshow(corr_matrix, text_auto=True, aspect="auto", color_continuous_scale='Viridis', title="Correlation Heatmap")
     st.plotly_chart(fig)
 
-    # K-means with 5 clusters
-    k = st.number_input("Select Number of Clusters for K-means", min_value=2, max_value=10, value=5)
-    kmeans = KMeans(n_clusters=k, random_state=42)
-    labels_kmeans = kmeans.fit_predict(X_scaled)
+    # Scatter plot of RAM vs Price
+    st.subheader('6. Scatter Plot: RAM vs Price')
+    fig = px.scatter(df_clean, x='Ram', y='Price', labels={'Ram': 'RAM', 'Price': 'Price'})
+    st.plotly_chart(fig)
 
-    df_clean['Cluster'] = labels_kmeans
-    st.write("Clustered Data:")
-    st.dataframe(df_clean)
+    # Bar plot of Company vs Price
+    st.subheader('7. Bar Plot: Company vs Price')
+    bar_data = df_clean.groupby('Company')['Price'].mean().reset_index()
+    st.bar_chart(bar_data.set_index('Company'))
 
-    # Linear Regression
-    st.subheader('5. Linear Regression: Modeling Price')
-    st.write("📈 Linear Regression: Modeling the relationship between features and price")
+    # Word Cloud for Company, Gpu_brand, and Os
+    st.subheader('8. Word Cloud for Company, Gpu_brand, and Os')
+    text = ' '.join(df_clean["Company"].values.tolist() + df_clean["Gpu_brand"].values.tolist() + df_clean["Os"].values.tolist())
+    wordcloud = WordCloud(width=800, height=400, background_color='black').generate(text)
+    fig, ax = plt.subplots(figsize=(10, 5))  # Set the figure size
+    ax.imshow(wordcloud, interpolation='bilinear')
+    ax.axis('off')
+    st.pyplot(fig)
 
-    # Ensure required columns for linear regression
-    required_columns = ['Cpu_brand', 'Ram', 'Price']
+    # Data Cleaning and Exploration
+    st.subheader('Data Cleaning and Data Preprocessing')
+    df.columns = df.columns.str.strip()  # Strip leading/trailing spaces from column names
+    st.write("#### Cleaned Data (No Missing Values):")
+    # Check for missing values and display the result as a DataFrame
+    missing_values = df.isnull().sum()
+    st.dataframe(missing_values.to_frame(name='Null Count'))
+    # Display Jupyter Code for Feature Engineering Process
 
-    # Check and log available columns in df_clean
-    st.write("Available columns in the cleaned dataset:")
-    st.write(df_clean.columns)
+    st.write('#### Feature Engineering Process')
 
-    # Check for missing required columns
-    missing_columns = [col for col in required_columns if col not in df_clean.columns]
-    if missing_columns:
-        st.error(f"Missing required columns: {missing_columns}")
-    else:
-        st.success("All required columns for Linear Regression are present!")
-        
-        # Check for missing data in the required columns
-        st.write("Checking for missing values in the required columns...")
-        st.write(df_clean[required_columns].isnull().sum())
+    # Feature extraction
+    df['ScreenSize'] = df['Ppi'] * df['Weight']
+    df['StorageCapacity'] = df['HDD'] + df['SSD']
+    st.dataframe(df[['ScreenSize', 'StorageCapacity']].head())
+    st.write("#### Encoding Categorical Features")
+    df_encoded = pd.get_dummies(df, columns=['Company', 'TypeName', 'TouchScreen', 'Cpu_brand', 'Gpu_brand', 'Os'])
+    st.dataframe(df_encoded.head())
 
-        # Proceed only if no missing data in the required columns
-        if df_clean[required_columns].isnull().sum().sum() > 0:
-            st.error("There are missing values in the required columns. Please handle them before proceeding!")
-        else:
-            # One-hot encoding
-            processor_dummies = pd.get_dummies(df_clean['Cpu_brand'], prefix='Cpu_brand')
-            ram_dummies = pd.get_dummies(df_clean['Ram'], prefix='Ram')
-            features = pd.concat([processor_dummies, ram_dummies], axis=1)
-            target = df_clean['Price']
+    X = df_encoded.drop('Price', axis=1)
+    y = df_encoded['Price']
 
-            # Split data
-            X_train, X_test, y_train, y_test = train_test_split(features, target, test_size=0.2, random_state=42)
+    # Splitting the data into train and test sets
+    st.write("#### Splitting the Data into Train and Test Sets")
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+    st.write(f"Training data size: {X_train.shape[0]}, Test data size: {X_test.shape[0]}")
 
-            # Fit model
-            lr = LinearRegression()
-            lr.fit(X_train, y_train)
-            y_pred = lr.predict(X_test)
+    
 
-            mse_lr = mean_squared_error(y_test, y_pred)
+    # Skip Feature Scaling section (No Scaling)
+    # If you don't want to scale, just remove this section.
+    # The X_train and X_test will not be scaled.
 
-            st.write("### Model Results")
-            st.write(f"Model Coefficients: {lr.coef_}")
-            st.write(f"Mean Squared Error: {mse_lr:.2f}")
+    # Label Encoding for Target Variable
+    st.write("#### Label Encoding for Target Variable")
+    le = LabelEncoder()
+    y_train = le.fit_transform(y_train)
+    st.write("Encoded Target Variable (First 5 rows of y_train):")
+    st.dataframe(y_train[:5])
 
-            # Plot Actual vs Predicted
-            st.write("### Actual vs Predicted Prices")
-            fig = go.Figure()
-            fig.add_trace(go.Scatter(x=y_test, y=y_pred, mode='markers', name='Predicted vs Actual'))
-            fig.update_layout(
-                title='Actual vs Predicted Price',
-                xaxis_title='Actual Price',
-                yaxis_title='Predicted Price',
-                template='plotly_white'
-            )
-            st.plotly_chart(fig)
+    
+    lr = LinearRegression()
+    lr.fit(X_train, y_train)
+    y_pred = lr.predict(X_test)
+    mse_lr = mean_squared_error(y_test, y_pred)
+    st.write(f"Mean Squared Error (Linear Regression): {mse_lr:.2f}")
+    st.session_state['X_train'] = X_train
+    st.session_state['X_test'] = X_test
+    st.session_state['y_train'] = y_train
+    st.session_state['y_test'] = y_test
+    st.session_state['X'] = X
+
 
 
 elif current_page == 'insights':
     st.title('Analysis and Insights')
     st.markdown('<hr>', unsafe_allow_html=True)
     
-    st.subheader('1. Key Insights from Data Exploration and Clustering')
-    st.write("""
-        - **Laptop Price Segmentation**: From the K-Means clustering, we observed distinct segments based on price and storage. These segments help identify high-end laptops with larger storage capacities, as well as budget laptops with more modest specifications.
-        - **Price vs. Storage**: The clustering model showed a correlation between storage capacity and price, with laptops having larger storage being more expensive.
-        - **Predicted Price Trends**: The linear regression model revealed that both processor type and RAM have a significant impact on predicting the laptop price, with higher-end processors and more RAM correlating with higher prices.
-    """)
+    if all(key in st.session_state for key in ['X_train', 'X_test', 'y_train', 'y_test', 'X']):
+        X_train = st.session_state['X_train']
+        X_test = st.session_state['X_test']
+        y_train = st.session_state['y_train']
+        y_test = st.session_state['y_test']
+        X = st.session_state['X']
 
-    # Display the clustering insights
-    st.subheader('2. Clustering Results')
-    st.write("The following plot shows the results of K-Means clustering based on laptop prices and storage capacity.")
+        st.write(f"Training data size: {X_train.shape[0]}, Test data size: {X_test.shape[0]}")
 
-    # Recreate the plot from earlier if clustering data exists
-    if 'Cluster' in cluster_data.columns:
-        fig = px.scatter(cluster_data, x='Price', y=storage_dummies.columns[0], color='Cluster', 
-                        title='Laptop Price Segmentation via K-Means Clustering')
-        st.plotly_chart(fig)
+        # Linear Regression
+        lr = LinearRegression()
+        lr.fit(X_train, y_train)
 
-    st.write("""
-        - The clustering analysis provides insights into the distribution of laptops based on their price and storage.
-        - The clusters show that laptops with larger storage tend to have a higher price, which aligns with expectations.
-        - The K-means clustering algorithm has grouped laptops into distinct clusters based on their numeric features, such as RAM, weight, price, and storage.
-        - The **Elbow Method** was used to determine the optimal number of clusters, which helped identify a balanced number of groups that best represent the data.
-        - **Cluster Insights**:
-            - Laptops in higher clusters tend to have greater RAM, larger storage (SSD/HDD), and higher prices.
-            - Lower clusters are associated with budget-friendly laptops with lower specifications, such as less RAM, smaller storage, and lower prices.
-            - Understanding the clusters can guide marketing strategies, inventory management, and feature optimization for different target segments.
-        - **Practical Applications**:
-            - **Consumer Decision-Making**: The clusters help segment laptops for consumers, making it easier to recommend products based on specific needs (e.g., high-performance laptops for professionals or budget-friendly options for students).
-            - **Pricing Strategy**: Businesses can use the clustering results to set competitive pricing, understanding which features drive up the cost.
-            - **Feature Optimization**: By profiling the clusters, manufacturers can identify areas for improvement (e.g., increasing storage or reducing weight in a certain cluster).
-    """)
+        # Predict the values
+        y_pred = lr.predict(X_test)
 
-    # Display insights from the linear regression model
-    st.subheader('3. Linear Regression Results')
-    st.write("""
-        - **Model Performance**: The linear regression model predicted laptop prices with a mean squared error of `X` (replace X with your computed value), suggesting a relatively good fit for the data.
-        - **Coefficient Interpretation**: Higher-end processors and larger amounts of RAM are significant predictors of laptop price, with each additional GB of RAM and processor upgrade contributing positively to the price.
-    """)
+        # Calculate MSE
+        mse_lr = mean_squared_error(y_test, y_pred)
 
-    st.write("Below is a scatter plot showing the actual vs. predicted prices using the linear regression model.")
+        # Streamlit display for MSE
+        st.write(f"**Mean Squared Error (Linear Regression):** {mse_lr:.2f}")
+
+        # Visualization: Plot Actual vs Predicted Values using Streamlit
+        st.write("#### Linear Regression: Actual vs Predicted")
+
+        # Set black background style
+        plt.style.use('dark_background')
+
+        # Create the plot
+        plt.figure(figsize=(8, 6))
+
+        # Scatter plot of actual vs predicted values
+        plt.scatter(y_test, y_pred, color='red', label="Predicted vs Actual")
+
+        plt.plot([y_test.min(), y_test.max()], [y_pred.min(), y_pred.max()], color='cyan', linestyle='--', linewidth=2, label="Perfect Prediction Line")
+        print(f"y_test range: {y_test.min()} to {y_test.max()}")
+
+
+        # Labels and title
+        plt.title('Linear Regression: Actual vs Predicted Values', color='white')
+        plt.xlabel('Actual Values', color='white')
+        plt.ylabel('Predicted Values', color='white')
+        plt.legend(facecolor='black', edgecolor='white', loc='upper left')
+        plt.grid(True, color='white')
+
+        # Display the plot dynamically in Streamlit
+        st.pyplot(plt, use_container_width=False)
+
+        # Elbow Method for KMeans Clustering
+        loss = []
+        for k in range(1, 11):
+            kmeans = KMeans(n_clusters=k)
+            kmeans.fit(X)
+            loss.append(kmeans.inertia_)
+
+        # Streamlit Dynamic Plotting
+        st.title('KMeans Elbow Method')
+
+        # Line Plot
+        st.write("#### Elbow Method for Optimal k")
+
+        # Create the figure for the elbow plot dynamically
+        fig, ax = plt.subplots(figsize=(8, 6))
+        ax.plot(range(1, 11), loss, marker='o', linestyle='-', color='b')
+        ax.set_title('Elbow Method for Optimal k')
+        ax.set_xlabel('Number of Clusters')
+        ax.set_ylabel('Inertia')
+
+        # Display plot dynamically in Streamlit
+        st.pyplot(fig, use_container_width=False)
+
+        # KMeans Clustering with 5 clusters
+        km = KMeans(n_clusters=5)
+        km.fit_predict(X_train,y_train)  # Only use X_train for clustering
+        labels_kmeans = km.labels_
+
+        # DBSCAN Clustering
+        dbscan = DBSCAN(eps=0.5, min_samples=5)
+        labels_dbscan = dbscan.fit_predict(X_train, y_train)  # Only use X_train for clustering
+
+        # Silhouette Score for KMeans
+        st.write("#### KMeans Clustering: Silhouette Score", silhouette_score(X_train, labels_kmeans))
+        st.write("#### DBSCAN Clustering: Silhouette Score", silhouette_score(X_train, labels_dbscan))
+
+
+        data = {
+            'Clustering Algorithm': ['K-means', 'DBSCAN'],
+            'Silhouette Score': [silhouette_score(X_train, labels_kmeans), silhouette_score(X_train, labels_dbscan)]
+        }
+        df = pd.DataFrame(data)
+
+        # Display the DataFrame in Streamlit (optional)
+        st.write(df)
+
+        # Create the bar chart
+        st.bar_chart(df.set_index('Clustering Algorithm')['Silhouette Score'])
+    else:
+        st.error("Please complete the Data Exploration and Analysis step first.")
     
-    # Scatter plot for actual vs predicted prices
-    if 'y_test' in locals() and 'predictions' in locals():
-        fig = go.Figure()
-        fig.add_trace(go.Scatter(x=y_test, y=predictions, mode='markers', name='Predicted vs Actual'))
-        fig.update_layout(title='Actual vs Predicted Price', xaxis_title='Actual Price', yaxis_title='Predicted Price')
-        st.plotly_chart(fig)
 
-    # Conclusion and insights
-    st.subheader('4. Key Takeaways and Recommendations')
-    st.write("""
-        - **Laptop Price Prediction**: The analysis highlights how various features, such as processor, RAM, and storage, influence laptop prices. This information can guide consumers in selecting laptops within their budget based on their requirements.
-        - **Future Work**: The model could be improved further by adding more features like brand, screen size, and GPU type to improve prediction accuracy.
-        - **Business Use**: Businesses selling laptops can use this model to price their laptops more competitively by understanding which features are most valued by consumers.
-    """)
 
 elif current_page == 'conclusion':
     st.title('Conclusion and Future Work')
